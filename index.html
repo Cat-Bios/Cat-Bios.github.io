@@ -1,17 +1,114 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Light Control</title>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8x8 Matrix Control</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #282c34;
+        }
+        .container {
+            position: relative;
+            padding: 20px;
+            border-radius: 20px;
+            border: 2px solid #f00;
+            box-shadow: 0 0 15px #f00;
+            background-color: #fff;
+        }
+        .matrix {
+            display: grid;
+            grid-template-columns: repeat(8, 40px);
+            grid-template-rows: repeat(8, 40px);
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .pixel {
+            width: 40px;
+            height: 40px;
+            background-color: #000;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .pixel.active {
+            border: 2px solid #f00;
+        }
+        .color-picker {
+            display: none;
+            margin: 10px 0;
+        }
+        .slider {
+            width: 100%;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Light Control</h1>
-    <button id="lightOn">Turn Light On</button>
-    <button id="lightOff">Turn Light Off</button>
-  </div>
-  <script src="script.js"></script>
+    <div class="container">
+        <div class="matrix" id="matrix"></div>
+        <input type="range" id="colorPicker" class="color-picker slider" min="0" max="15" step="1">
+        <button id="send">Отправить</button>
+    </div>
+    
+    <script>
+        const matrix = document.getElementById('matrix');
+        const colorPicker = document.getElementById('colorPicker');
+        const pixels = Array(8).fill().map(() => Array(8).fill(0)); // Значения от 0 до 15
+        let currentPixel = null;
+
+        for (let i = 0; i < 64; i++) {
+            const pixel = document.createElement('div');
+            pixel.className = 'pixel';
+            pixel.dataset.x = i % 8;
+            pixel.dataset.y = Math.floor(i / 8);
+            pixel.addEventListener('click', () => {
+                currentPixel = pixel;
+                colorPicker.style.display = 'block';
+                colorPicker.value = pixels[pixel.dataset.y][pixel.dataset.x];
+                updatePixelColor(pixel, colorPicker.value);
+            });
+            matrix.appendChild(pixel);
+        }
+
+        colorPicker.addEventListener('input', () => {
+            if (currentPixel) {
+                const value = colorPicker.value;
+                updatePixelColor(currentPixel, value);
+                pixels[currentPixel.dataset.y][currentPixel.dataset.x] = value;
+            }
+        });
+
+        function updatePixelColor(pixel, value) {
+            const redValue = value * 16; // Значение от 0 до 240
+            pixel.style.backgroundColor = `rgb(${redValue}, 0, 0)`;
+        }
+
+        document.getElementById('send').addEventListener('click', () => {
+    const url = 'https://cat-bios.github.io/save_message'; // Замените на URL вашего сервера
+    let message = '/set ';
+    message += pixels.map((row, y) => row.map((value, x) => `${x + 1}.${y + 1}.${value}`).join('; ')).join('\n');
+    const data = { message: message };
+
+    fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    }).then(response => response.json())
+      .then(data => console.log(data))
+      .catch(error => console.error('Error:', error));
+});
+    </script>
 </body>
 </html>
